@@ -1,17 +1,23 @@
-const http = require("http").createServer();
+const cv = require('opencv4nodejs');
+const express = require('express');
+const app = express();
+const path = require('path');
 
-const io = require("socket.io")(http, {
-  cors: { origin: "*" },
+const server = require('http').createServer(app);
+const io = require('socket.io')(server);
+
+const wCap = new cv.VideoCapture(0);
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname + "/src/", 'index.html'));
 });
 
-io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
-  socket.on("message", (message) => {
-    console.log(`User ${socket.id} sent message: ${message}`);
-    io.emit("message", message);
-  });
-});
+setInterval(() => {
+  const frame = wCap.read();
+  const image = cv.imencode('.jpg', frame).toString('base64');
+  io.emit('image', image);
+}, 1000/60);
 
-http.listen(4000, () => {
-  console.log("listening on *:4000");
+server.listen(3000, () => {
+  console.log('Server is running on port 3000');
 });
